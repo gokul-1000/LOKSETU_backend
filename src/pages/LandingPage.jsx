@@ -1,11 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import {
   ArrowRight, FileText, Shield, Search, Brain,
   Zap, CheckCircle, User, Building2, Crown, ChevronRight,
   MapPin, BarChart3, MessageSquare,
 } from 'lucide-react'
 import { Button, StatPill } from '../components/ui'
+import LanguageSwitcher from '../components/LanguageSwitcher'
 
 /* ── Animated counter ───────────────────────────── */
 const useCount = (target, duration = 1800) => {
@@ -115,6 +117,7 @@ const AGENTS = [
 /* ────────────────────────────────────────────────── */
 export default function LandingPage() {
   const navigate    = useNavigate()
+  const { t }       = useTranslation()
   const resolved    = useCount(18470, 2000)
   const [activeStep, setActiveStep] = useState(0)
   const [hoveredPortal, setHoveredPortal] = useState(null)
@@ -149,7 +152,8 @@ export default function LandingPage() {
               <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.3)', letterSpacing: '0.12em', textTransform: 'uppercase' }}>Delhi Governance Intelligence</div>
             </div>
           </div>
-          <div style={{ display: 'flex', gap: 10 }}>
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+            <LanguageSwitcher />
             <Button variant="outline-light" size="sm" onClick={() => navigate('/login')}>Sign In</Button>
             <Button size="sm" icon={FileText} onClick={() => navigate('/login?role=citizen')} style={{ background: 'var(--saffron)' }}>File Complaint</Button>
           </div>
@@ -165,12 +169,10 @@ export default function LandingPage() {
             </div>
             {/* Headline */}
             <h1 className="animate-fade-up d-100" style={{ fontSize: 'clamp(40px, 5vw, 64px)', color: 'white', lineHeight: 1.08, marginBottom: 24, letterSpacing: '-0.02em' }}>
-              Your Voice.<br />
-              <span style={{ color: 'var(--saffron)', fontStyle: 'italic' }}>Your City.</span><br />
-              Your Rights.
+              {t('landing.heading1')}
             </h1>
             <p className="animate-fade-up d-200" style={{ fontSize: 18, color: 'rgba(255,255,255,0.5)', lineHeight: 1.75, marginBottom: 36, maxWidth: 460 }}>
-              LokSetu connects Delhi citizens directly to the municipal system. File complaints, track resolution, and watch AI ensure accountability — in your language.
+              {t('landing.subheading1')}
             </p>
             {/* CTAs */}
             <div className="animate-fade-up d-300" style={{ display: 'flex', gap: 12, marginBottom: 48 }}>
