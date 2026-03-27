@@ -1,8 +1,10 @@
 import React, { useState } from 'react'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { Bell, Search, Globe, X, Settings, ChevronLeft, ChevronRight, Shield } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { Avatar } from '../ui'
 import { NOTIFICATIONS } from '../../data/mockData'
+import { useLanguage } from '../../context/LanguageContext'
 
 const notifColor = { critical: 'var(--red)', warning: 'var(--amber)', info: 'var(--blue-light)' }
 
@@ -11,11 +13,21 @@ export default function DashboardLayout({ navItems, user, accentColor = 'var(--b
   const [notifOpen,   setNotifOpen]   = useState(false)
   const [langOpen,    setLangOpen]    = useState(false)
   const [search,      setSearch]      = useState('')
+  const { t } = useTranslation()
+  const { language, changeLanguage } = useLanguage()
   const navigate  = useNavigate()
   const location  = useLocation()
 
   const meta   = pageMeta[location.pathname] || { title: 'Dashboard', sub: '' }
   const unread = NOTIFICATIONS.filter(n => !n.read).length
+
+  const languages = [
+    { code: 'en', label: 'English' },
+    { code: 'hi', label: 'हिंदी' },
+    { code: 'pa', label: 'ਪੰਜਾਬੀ' },
+  ]
+
+  const currentLang = languages.find(l => l.code === language) || languages[0]
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh' }}>
@@ -62,7 +74,7 @@ export default function DashboardLayout({ navItems, user, accentColor = 'var(--b
         <div style={{ padding: 12, borderTop: 'var(--border-dark)' }}>
           <button onClick={() => navigate('/')} style={{ width: '100%', border: 'none', background: 'transparent', borderRadius: 'var(--r-md)', padding: sidebarOpen ? '7px 12px' : '7px 0', display: 'flex', alignItems: 'center', gap: 10, color: 'rgba(255,255,255,0.35)', cursor: 'pointer', justifyContent: sidebarOpen ? 'flex-start' : 'center' }}>
             <Settings size={15} />
-            {sidebarOpen && <span style={{ fontSize: 13 }}>Settings</span>}
+            {sidebarOpen && <span style={{ fontSize: 13 }}>{t('common.settings')}</span>}
           </button>
           {sidebarOpen && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', marginTop: 4, background: 'rgba(255,255,255,0.06)', borderRadius: 'var(--r-md)' }}>
@@ -93,7 +105,7 @@ export default function DashboardLayout({ navItems, user, accentColor = 'var(--b
           {/* Search */}
           <div style={{ position: 'relative', width: 240 }}>
             <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--ink-light)' }} />
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search…" style={{ width: '100%', height: 34, padding: '0 30px 0 32px', border: 'var(--border)', borderRadius: 'var(--r-full)', background: 'var(--canvas)', fontSize: 12, fontFamily: 'var(--font-body)', color: 'var(--ink)', outline: 'none' }}
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder={t('common.search')} style={{ width: '100%', height: 34, padding: '0 30px 0 32px', border: 'var(--border)', borderRadius: 'var(--r-full)', background: 'var(--canvas)', fontSize: 12, fontFamily: 'var(--font-body)', color: 'var(--ink)', outline: 'none' }}
               onFocus={e => e.target.style.borderColor = accentColor}
               onBlur={e  => e.target.style.borderColor = 'rgba(13,27,42,0.08)'} />
             {search && <button onClick={() => setSearch('')} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--ink-light)', display: 'flex' }}><X size={12} /></button>}
@@ -102,15 +114,15 @@ export default function DashboardLayout({ navItems, user, accentColor = 'var(--b
           {/* Lang */}
           <div style={{ position: 'relative' }}>
             <button onClick={() => setLangOpen(!langOpen)} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 11px', border: 'var(--border)', borderRadius: 'var(--r-full)', background: 'transparent', cursor: 'pointer', fontSize: 12, color: 'var(--ink-light)', fontFamily: 'var(--font-body)' }}>
-              <Globe size={13} /> EN
+              <Globe size={13} /> {currentLang.code.toUpperCase()}
             </button>
             {langOpen && (
               <div style={{ position: 'absolute', top: '110%', right: 0, background: 'var(--surface)', border: 'var(--border)', borderRadius: 'var(--r-md)', boxShadow: 'var(--shadow-md)', padding: 6, minWidth: 130, zIndex: 200 }}>
-                {['English', 'हिंदी', 'ਪੰਜਾਬੀ'].map(l => (
-                  <button key={l} onClick={() => setLangOpen(false)} style={{ width: '100%', padding: '7px 10px', border: 'none', background: 'none', cursor: 'pointer', fontSize: 13, textAlign: 'left', fontFamily: 'var(--font-body)', borderRadius: 'var(--r-sm)' }}
-                    onMouseEnter={e => e.currentTarget.style.background = 'var(--canvas)'}
-                    onMouseLeave={e => e.currentTarget.style.background = 'none'}
-                  >{l}</button>
+                {languages.map(({ code, label }) => (
+                  <button key={code} onClick={() => { changeLanguage(code); setLangOpen(false) }} style={{ width: '100%', padding: '7px 10px', border: 'none', background: code === language ? 'var(--canvas)' : 'none', cursor: 'pointer', fontSize: 13, textAlign: 'left', fontFamily: 'var(--font-body)', borderRadius: 'var(--r-sm)', fontWeight: code === language ? 600 : 400 }}
+                    onMouseEnter={e => { if (code !== language) e.currentTarget.style.background = 'var(--canvas)' }}
+                    onMouseLeave={e => { if (code !== language) e.currentTarget.style.background = 'none' }}
+                  >{label}</button>
                 ))}
               </div>
             )}
@@ -125,7 +137,7 @@ export default function DashboardLayout({ navItems, user, accentColor = 'var(--b
             {notifOpen && (
               <div style={{ position: 'absolute', top: '110%', right: 0, width: 340, background: 'var(--surface)', border: 'var(--border)', borderRadius: 'var(--r-lg)', boxShadow: 'var(--shadow-lg)', zIndex: 200, overflow: 'hidden' }}>
                 <div style={{ padding: '12px 16px', borderBottom: 'var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontWeight: 600, fontSize: 13 }}>Notifications</span>
+                  <span style={{ fontWeight: 600, fontSize: 13 }}>{t('common.notifications')}</span>
                   <span style={{ fontSize: 11, color: 'var(--ink-light)' }}>{unread} unread</span>
                 </div>
                 {NOTIFICATIONS.map(n => (

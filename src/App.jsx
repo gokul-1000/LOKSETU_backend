@@ -1,7 +1,9 @@
 import React from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AppProvider } from './context/AppContext'
+import { LanguageProvider } from './context/LanguageContext'
 import { Toaster } from 'react-hot-toast'
+import './i18n/config'
 
 // ── Public pages ───────────────────────────────────────────────
 import LandingPage from './pages/LandingPage'
@@ -49,19 +51,20 @@ const Soon = ({ title }) => (
 
 export default function App() {
   return (
-    <AppProvider>
-      <BrowserRouter>
-        <Toaster
-          position="top-right"
-          toastOptions={{
-            style: {
-              fontFamily: 'var(--font-body)',
-              fontSize: 13,
-              borderRadius: 'var(--r-md)',
-              boxShadow: 'var(--shadow-md)',
-            },
-          }}
-        />
+    <LanguageProvider>
+      <AppProvider>
+        <BrowserRouter>
+          <Toaster
+            position="top-right"
+            toastOptions={{
+              style: {
+                fontFamily: 'var(--font-body)',
+                fontSize: 13,
+                borderRadius: 'var(--r-md)',
+                boxShadow: 'var(--shadow-md)',
+              },
+            }}
+          />
 
         <Routes>
           {/* ── Public ──────────────────────────────────────── */}
@@ -112,6 +115,7 @@ export default function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
-    </AppProvider>
+      </AppProvider>
+    </LanguageProvider>
   )
 }
