@@ -1,0 +1,219 @@
+// This is your Prisma schema file.
+// Learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// USERS & AUTH
+// ──────────────────────────────────────────────────────────────────────
+
+model User {
+  id            String     @id @default(auto()) @map("_id") @db.ObjectId
+  email         String     @unique
+  password      String
+  name          String
+  role          Role       @default(CITIZEN)
+  avatar        String?
+  phone         String?
+  ward          String?
+  zone          String?
+  department    String?    // For department heads/officers
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  complaints    Complaint[]
+  activities    Activity[]
+}
+
+enum Role {
+  CITIZEN
+  WARD_OFFICER
+  DEPARTMENT_HEAD
+  LEADER
+  ADMIN
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// COMPLAINTS
+// ──────────────────────────────────────────────────────────────────────
+
+model Complaint {
+  id            String     @id @default(auto()) @map("_id") @db.ObjectId
+  complaintId   String     @unique // Display ID like GRV-2024-001
+  title         String
+  description   String
+  category      String
+  location      String
+  ward          String
+  zone          String
+  latitude      Float?
+  longitude     Float?
+  
+  status        ComplaintStatus @default(OPEN)
+  priority      Priority    @default(MEDIUM)
+  urgency       Int         @default(5) // 1-10 scale
+  
+  // AI Classification
+  aiSummary     String?
+  sentiment     String?     // frustrated, angry, satisfied, neutral
+  sentimentScore Float?     // 0-1
+  aiClassified  Boolean     @default(false)
+  
+  // Department Routing
+  department    String?
+  assignedTo    String?     // User ID of assigned officer
+  confidence    Float?      // Confidence in department recommendation
+  reason        String?     // Why this department was recommended
+  sla           String?     // Service level agreement
+  
+  // Media
+  images        String[]    @default([])
+  attachments   String[]    @default([])
+  
+  // Metadata
+  channel       String      @default("web") // web, whatsapp, mobile, kiosk
+  tags          String[]    @default([])
+  
+  // Citizen
+  citizenId     String      @db.ObjectId
+  citizen       User        @relation(fields: [citizenId], references: [id], onDelete: Cascade)
+  
+  // Timestamps
+  incidentDate  DateTime?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  resolvedAt    DateTime?
+
+  // Relations
+  updates       Update[]
+  activities    Activity[]
+
+  @@index([citizenId])
+  @@index([status])
+  @@index([department])
+  @@index([ward])
+  @@index([zone])
+}
+
+enum ComplaintStatus {
+  OPEN
+  PROGRESS
+  PENDING
+  ESCALATED
+  RESOLVED
+  REJECTED
+  DUPLICATE
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// UPDATES & TRACKING
+// ──────────────────────────────────────────────────────────────────────
+
+model Update {
+  id            String     @id @default(auto()) @map("_id") @db.ObjectId
+  complaintId   String     @db.ObjectId
+  complaint     Complaint  @relation(fields: [complaintId], references: [id], onDelete: Cascade)
+  
+  type          UpdateType // Status change, comment, assignment, etc.
+  message       String
+  metadata      Json?      // For storing additional fields
+  
+  createdBy     String     // User ID
+  createdAt     DateTime   @default(now())
+
+  @@index([complaintId])
+}
+
+enum UpdateType {
+  STATUS_CHANGE
+  COMMENT
+  ASSIGNMENT
+  ESCALATION
+  RESOLUTION
+  IMAGE_ADDED
+  MEDIA_ADDED
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// DEPARTMENTS
+// ──────────────────────────────────────────────────────────────────────
+
+model Department {
+  id            String     @id @default(auto()) @map("_id") @db.ObjectId
+  name          String     @unique
+  code          String     @unique
+  description   String?
+  categories    String[]   @default([])
+  sla           String     // e.g., "48 hours"
+  contactEmail  String?
+  phone         String?
+  headId        String?    // User ID of department head
+  
+  zones         String[]   @default([]) // Zones this dept covers
+  
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// ZONES & WARDS
+// ──────────────────────────────────────────────────────────────────────
+
+model Zone {
+  id            String     @id @default(auto()) @map("_id") @db.ObjectId
+  name          String     @unique
+  code          String     @unique
+  healthScore   Int        @default(50) // 0-100
+  totalWards    Int
+  
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+}
+
+model Ward {
+  id            String     @id @default(auto()) @map("_id") @db.ObjectId
+  name          String
+  code          String     @unique
+  zone          String
+  population    Int?
+  officerId     String?    // User ID of ward officer
+  
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// ACTIVITY LOG
+// ──────────────────────────────────────────────────────────────────────
+
+model Activity {
+  id            String     @id @default(auto()) @map("_id") @db.ObjectId
+  userId        String     @db.ObjectId
+  user          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  complaintId   String?    @db.ObjectId
+  complaint     Complaint? @relation(fields: [complaintId], references: [id], onDelete: Cascade)
+  
+  action        String     // "created_complaint", "updated_complaint", "viewed_complaint", etc.
+  description   String?
+  metadata      Json?
+  
+  createdAt     DateTime   @default(now())
+
+  @@index([userId])
+  @@index([complaintId])
+}
