@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import {
   ArrowRight, FileText, Shield, Search, Brain,
   Zap, CheckCircle, User, Building2, Crown, ChevronRight,
-  MapPin, BarChart3, MessageSquare,
+  MapPin, BarChart3, MessageSquare, Zap as Lightning, Droplets, Heart, Trash2,
 } from 'lucide-react'
 import { Button, StatPill } from '../components/ui'
 import LanguageSwitcher from '../components/LanguageSwitcher'
@@ -36,6 +36,336 @@ const DEBATE_LINES = [
   { agent: 'Evidence Reviewer', color: '#34D399', msg: 'Pipeline rupture probability 87% based on complaint cluster in Ward 7.' },
   { agent: 'Chief Coordinator', color: '#A78BFA', msg: '{"status":"ESCALATED","dept":"Water Board","urgency":9,"priority":"CRITICAL"}' },
 ]
+
+/* ── Departments Carousel ────────────────────────── */
+/* ── Departments Carousel ────────────────────────── */
+const DepartmentsCarousel = ({ showFeatured }) => {
+  const getRandomColor = (index) => DEPT_COLORS[index % DEPT_COLORS.length]
+  
+  if (showFeatured) {
+    return (
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 20, width: '100%' }}>
+        {FEATURED_DEPARTMENTS.map((dept, i) => {
+          const Icon = dept.icon
+          return (
+            <div 
+              key={i} 
+              style={{ 
+                display: 'flex', 
+                flexDirection: 'column',
+                alignItems: 'center',
+                textAlign: 'center',
+                padding: '28px 20px', 
+                borderRadius: 16, 
+                background: `linear-gradient(135deg, ${dept.bgColor}, ${dept.color}08)`,
+                border: `2px solid ${dept.color}30`,
+                animation: `fadeIn 0.5s ease ${i * 0.1}s both`,
+                transition: 'all 0.3s ease',
+                cursor: 'pointer',
+                position: 'relative',
+                overflow: 'hidden',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-8px)'
+                e.currentTarget.style.borderColor = dept.color
+                e.currentTarget.style.boxShadow = `0 12px 32px ${dept.color}20`
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)'
+                e.currentTarget.style.borderColor = `${dept.color}30`
+                e.currentTarget.style.boxShadow = 'none'
+              }}
+            >
+              <div style={{ position: 'absolute', top: -20, right: -20, width: 80, height: 80, borderRadius: '50%', background: `${dept.color}10`, opacity: 0.5 }} />
+              <div style={{ width: 56, height: 56, borderRadius: 12, background: `${dept.color}15`, border: `2px solid ${dept.color}40`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginBottom: 16, position: 'relative', zIndex: 1 }}>
+                <Icon size={28} color={dept.color} />
+              </div>
+              <div style={{ fontWeight: 700, color: dept.color, fontSize: 16, marginBottom: 6, position: 'relative', zIndex: 1 }}>{dept.name}</div>
+              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', position: 'relative', zIndex: 1 }}>{dept.description}</div>
+            </div>
+          )
+        })}
+      </div>
+    )
+  }
+
+  // Categorized all departments view
+  const categories = {
+    'Power & Utilities': ['BSES Rajdhani Power Ltd', 'BSES Yamuna Power Ltd', 'Delhi Transco Ltd', 'Indraprastha Gas Limited', 'Tata Power Delhi Distribution Ltd'],
+    'Water & Sanitation': ['Delhi Jal Board', 'Delhi Commission for Safai Karamcharis'],
+    'Public Services': ['Delhi Police', 'Delhi Fires Services', 'Delhi Transport Corporation', 'Delhi Metro Rail Corporation Ltd', 'Public Works Department'],
+    'Women & Children': ['Delhi Commission for Women', 'Women and Child Development Department'],
+    'Health & Education': ['Department of Health and Family Welfare', 'Education Department', 'Higher Education Department'],
+    'Infrastructure': ['Delhi Development Authority', 'Department of Land and Building', 'Urban Development', 'Department of Environment'],
+    'Legal & Admin': ['Law, Justice and Legislative Affairs', 'Delhi Legislative Assembly', 'Office of the Chief Secretary GNCT of Delhi'],
+    'Other Departments': ALL_DEPARTMENTS.filter(d => !['BSES Rajdhani Power Ltd', 'BSES Yamuna Power Ltd', 'Delhi Transco Ltd', 'Indraprastha Gas Limited', 'Tata Power Delhi Distribution Ltd', 'Delhi Jal Board', 'Delhi Commission for Safai Karamcharis', 'Delhi Police', 'Delhi Fires Services', 'Delhi Transport Corporation', 'Delhi Metro Rail Corporation Ltd', 'Public Works Department', 'Delhi Commission for Women', 'Women and Child Development Department', 'Department of Health and Family Welfare', 'Education Department', 'Higher Education Department', 'Delhi Development Authority', 'Department of Land and Building', 'Urban Development', 'Department of Environment', 'Law, Justice and Legislative Affairs', 'Delhi Legislative Assembly', 'Office of the Chief Secretary GNCT of Delhi'].includes(d))
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24, width: '100%' }}>
+      {Object.entries(categories).map(([category, depts], catIdx) => (
+        <div key={category} style={{ animation: `fadeIn 0.6s ease ${catIdx * 0.08}s both`, opacity: 0, animationFillMode: 'forwards' }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--saffron)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--saffron)' }} />
+            {category} ({depts.length})
+          </div>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            {depts.map((dept, idx) => (
+              <div
+                key={`${category}-${idx}`}
+                style={{
+                  padding: '10px 16px',
+                  borderRadius: 10,
+                  background: `${getRandomColor(catIdx * 10 + idx)}12`,
+                  border: `1.5px solid ${getRandomColor(catIdx * 10 + idx)}40`,
+                  fontSize: 12,
+                  color: getRandomColor(catIdx * 10 + idx),
+                  fontWeight: 600,
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  maxWidth: '200px',
+                  animation: `pulse${(catIdx * 10 + idx) % 3} 2.5s ease-in-out infinite`,
+                  animationDelay: `${(catIdx * 10 + idx) * 0.05}s`,
+                  transition: 'all 0.3s ease',
+                  cursor: 'pointer',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = `${getRandomColor(catIdx * 10 + idx)}25`
+                  e.currentTarget.style.borderColor = getRandomColor(catIdx * 10 + idx)
+                  e.currentTarget.style.transform = 'scale(1.08)'
+                  e.currentTarget.style.boxShadow = `0 6px 16px ${getRandomColor(catIdx * 10 + idx)}35`
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = `${getRandomColor(catIdx * 10 + idx)}12`
+                  e.currentTarget.style.borderColor = `${getRandomColor(catIdx * 10 + idx)}40`
+                  e.currentTarget.style.transform = 'scale(1)'
+                  e.currentTarget.style.boxShadow = 'none'
+                }}
+              >
+                {dept}
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+const DepartmentsSection = () => {
+  const [showFeatured, setShowFeatured] = useState(false)
+  const [autoSwitch, setAutoSwitch] = useState(true)
+
+  useEffect(() => {
+    if (!autoSwitch) return
+    
+    const timer1 = setTimeout(() => setShowFeatured(true), 5000)
+    const timer2 = setTimeout(() => setShowFeatured(false), 9000)
+    const interval = setInterval(() => {
+      setShowFeatured(prev => !prev)
+    }, 14000)
+    
+    return () => {
+      clearTimeout(timer1)
+      clearTimeout(timer2)
+      clearInterval(interval)
+    }
+  }, [autoSwitch])
+
+  const handleToggle = (featured) => {
+    setShowFeatured(featured)
+    setAutoSwitch(false)
+  }
+
+  return (
+    <section style={{ background: 'var(--ink)', padding: '100px 40px', borderTop: '1px solid rgba(255,255,255,0.05)', borderBottom: '1px solid rgba(255,255,255,0.05)', position: 'relative', overflow: 'hidden' }}>
+      {/* Background decoration */}
+      <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(ellipse 80% 60% at 50% 0%, rgba(232,129,58,0.08) 0%, transparent 70%)', pointerEvents: 'none' }} />
+      
+      <div style={{ maxWidth: 1280, margin: '0 auto', position: 'relative', zIndex: 1 }}>
+        <div style={{ textAlign: 'center', marginBottom: 64 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--saffron)', marginBottom: 16, display: 'inline-block', background: 'rgba(232,129,58,0.15)', padding: '6px 14px', borderRadius: 20, border: '1px solid rgba(232,129,58,0.3)' }}>Department Coverage</div>
+          <h2 style={{ fontSize: 'clamp(32px, 5vw, 48px)', color: 'white', marginBottom: 16, fontWeight: 700, lineHeight: 1.2 }}>Connect with <span style={{ color: 'var(--saffron)', fontStyle: 'italic' }}>90+ Government</span> Agencies</h2>
+          <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.55)', maxWidth: 650, margin: '0 auto', lineHeight: 1.7 }}>Your complaint reaches the right Delhi department instantly. From utilities to social services, LokSetu routes to every civic authority.</p>
+        </div>
+
+        {/* Toggle Buttons */}
+        <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginBottom: 48, flexWrap: 'wrap' }}>
+          <button
+            onClick={() => handleToggle(false)}
+            style={{
+              padding: '10px 20px',
+              borderRadius: 10,
+              border: showFeatured ? '1px solid rgba(255,255,255,0.2)' : '2px solid var(--saffron)',
+              background: showFeatured ? 'rgba(255,255,255,0.05)' : 'rgba(232,129,58,0.15)',
+              color: showFeatured ? 'rgba(255,255,255,0.4)' : 'var(--saffron)',
+              fontWeight: 600,
+              fontSize: 14,
+              cursor: 'pointer',
+              transition: 'all 0.3s ease',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+            }}
+            onMouseEnter={(e) => {
+              if (showFeatured) {
+                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.4)'
+                e.currentTarget.style.background = 'rgba(255,255,255,0.08)'
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (showFeatured) {
+                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'
+                e.currentTarget.style.background = 'rgba(255,255,255,0.05)'
+              }
+            }}
+          >
+            <span>🔍</span> All Departments
+          </button>
+          <button
+            onClick={() => handleToggle(true)}
+            style={{
+              padding: '10px 20px',
+              borderRadius: 10,
+              border: !showFeatured ? '1px solid rgba(255,255,255,0.2)' : '2px solid var(--saffron)',
+              background: !showFeatured ? 'rgba(255,255,255,0.05)' : 'rgba(232,129,58,0.15)',
+              color: !showFeatured ? 'rgba(255,255,255,0.4)' : 'var(--saffron)',
+              fontWeight: 600,
+              fontSize: 14,
+              cursor: 'pointer',
+              transition: 'all 0.3s ease',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+            }}
+            onMouseEnter={(e) => {
+              if (!showFeatured) {
+                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.4)'
+                e.currentTarget.style.background = 'rgba(255,255,255,0.08)'
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!showFeatured) {
+                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'
+                e.currentTarget.style.background = 'rgba(255,255,255,0.05)'
+              }
+            }}
+          >
+            <span>⭐</span> Most-Used Services
+          </button>
+          <button
+            onClick={() => setAutoSwitch(!autoSwitch)}
+            style={{
+              padding: '10px 20px',
+              borderRadius: 10,
+              border: '1px solid rgba(255,255,255,0.15)',
+              background: autoSwitch ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.03)',
+              color: autoSwitch ? 'white' : 'rgba(255,255,255,0.4)',
+              fontWeight: 600,
+              fontSize: 14,
+              cursor: 'pointer',
+              transition: 'all 0.3s ease',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(255,255,255,0.1)'
+              e.currentTarget.style.color = 'white'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = autoSwitch ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.03)'
+              e.currentTarget.style.color = autoSwitch ? 'white' : 'rgba(255,255,255,0.4)'
+            }}
+          >
+            <span>{autoSwitch ? '▶️' : '⏸'}</span> {autoSwitch ? 'Auto-Switch On' : 'Auto-Switch Off'}
+          </button>
+        </div>
+
+        {/* Main carousel container with smooth transition */}
+        <div style={{ 
+          minHeight: showFeatured ? 300 : 600,
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'center',
+          position: 'relative',
+          transition: 'min-height 0.6s ease',
+        }}>
+          <div style={{ 
+            width: '100%',
+            opacity: showFeatured ? 1 : 0,
+            visibility: showFeatured ? 'visible' : 'hidden',
+            transition: 'opacity 0.6s ease, visibility 0.6s ease',
+            position: showFeatured ? 'relative' : 'absolute',
+          }}>
+            {showFeatured && <DepartmentsCarousel showFeatured={true} />}
+          </div>
+          <div style={{ 
+            width: '100%',
+            opacity: !showFeatured ? 1 : 0,
+            visibility: !showFeatured ? 'visible' : 'hidden',
+            transition: 'opacity 0.6s ease, visibility 0.6s ease',
+            position: !showFeatured ? 'relative' : 'absolute',
+          }}>
+            {!showFeatured && <DepartmentsCarousel showFeatured={false} />}
+          </div>
+        </div>
+
+        {/* Progress indicators */}
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 48, alignItems: 'center' }}>
+          <button
+            onClick={() => handleToggle(false)}
+            style={{ 
+              width: !showFeatured ? 24 : 8, 
+              height: 8, 
+              borderRadius: 999, 
+              background: !showFeatured ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.2)',
+              border: 'none',
+              cursor: 'pointer',
+              transition: 'all 0.4s ease',
+            }}
+          />
+          <button
+            onClick={() => handleToggle(true)}
+            style={{ 
+              width: showFeatured ? 24 : 8, 
+              height: 8, 
+              borderRadius: 999, 
+              background: showFeatured ? 'var(--saffron)' : 'rgba(255,255,255,0.2)',
+              border: 'none',
+              cursor: 'pointer',
+              transition: 'all 0.4s ease',
+            }}
+          />
+        </div>
+
+        {/* Mode label */}
+        <div style={{ textAlign: 'center', marginTop: 32, fontSize: 13, color: 'rgba(255,255,255,0.35)', fontStyle: 'italic', transition: 'all 0.4s ease' }}>
+          {autoSwitch ? (showFeatured ? '⭐ Most-used services' : '🔍 Browsing all departments') + ' — Auto-switching every 14 seconds' : '🎮 Manual mode - Choose what you want to see'}
+        </div>
+
+        {/* CTA Section */}
+        <div style={{ marginTop: 56, textAlign: 'center', display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+          <Button 
+            size="lg" 
+            onClick={() => navigate('/login?role=citizen')} 
+            style={{ background: 'var(--saffron)', fontSize: 15, padding: '13px 28px', gap: 10 }}
+          >
+            <ArrowRight size={17} /> File a Complaint Now
+          </Button>
+          <Button 
+            variant="outline-light" 
+            size="lg" 
+            style={{ fontSize: 15, padding: '13px 24px', cursor: 'pointer' }}
+          >
+            View Full Department List
+          </Button>
+        </div>
+      </div>
+    </section>
+  )
+}
 
 const DebateTerminal = () => {
   const [lines, setLines] = useState([])
@@ -76,7 +406,7 @@ const TICKER = [
   { label: 'Avg response',     value: '4.6d',   color: '#2563C4' },
   { label: 'AI classified',    value: '98.4%',  color: '#6B48CC' },
   { label: 'Critical open',    value: '12',     color: '#C0392B' },
-  { label: 'Active wards',     value: '272',    color: '#2A7A4B' },
+  { label: 'Active wards',     value: '250',    color: '#2A7A4B' },
   { label: 'Departments',      value: '91',     color: '#2563C4' },
   { label: 'Most active ward', value: 'Ward 7', color: '#D97706' },
 ]
@@ -94,7 +424,119 @@ const PORTALS = [
   { role: 'Citizen',       icon: User,      color: 'var(--blue)',    bg: 'var(--blue-pale)',   path: '/login?role=citizen',  tagline: 'File, track & get heard',    features: ['AI-assisted filing in 3 languages', 'Real-time status tracking', 'WhatsApp notifications', 'RTI guidance'] },
   { role: 'Ward Officer',  icon: Shield,    color: 'var(--saffron)', bg: 'var(--saffron-pale)',path: '/login?role=officer',  tagline: 'Manage your ward\'s queue',  features: ['Ward complaint queue', 'SLA countdown alerts', 'Employee assignment', 'AI weekly report'] },
   { role: 'Dept Head',     icon: Building2, color: 'var(--green)',   bg: 'var(--green-pale)',  path: '/login?role=dept',     tagline: 'Domain analytics & team',    features: ['Dept-wide complaint inbox', 'AI root cause analysis', 'Employee performance', 'Cross-ward patterns'] },
-  { role: 'Leader / DC',   icon: Crown,     color: 'var(--purple)',  bg: 'var(--purple-pale)', path: '/leader/dashboard',    tagline: 'City-level intelligence',    features: ['272-ward health heatmap', 'AI pattern detection', 'Department performance', 'Accountability reports'] },
+  { role: 'Leader / DC',   icon: Crown,     color: 'var(--purple)',  bg: 'var(--purple-pale)', path: '/leader/dashboard',    tagline: 'City-level intelligence',    features: ['250-ward health heatmap', 'AI pattern detection', 'Department performance', 'Accountability reports'] },
+]
+
+/* ── All Departments ─────────────────────────────── */
+const ALL_DEPARTMENTS = [
+  'Administrative Reforms Department',
+  'Art Culture and Language Department',
+  'BSES Rajdhani Power Ltd',
+  'BSES Yamuna Power Ltd',
+  'Chief Electoral Officer',
+  'Delhi Agricultural Marketing Board',
+  'Delhi Building and Other Construction Workers Welfare Board',
+  'Delhi Commission for Protection of Child Rights',
+  'Delhi Commission for Safai Karamcharis',
+  'Delhi Commission for Women',
+  'Delhi Consumer Cooperatives Wholesale Store Ltd',
+  'Delhi Development Authority',
+  'Delhi Electricity Regulatory Commission',
+  'Delhi Fires Services',
+  'Delhi Institute of Hotel Management and Catering Technology',
+  'Delhi Jal Board',
+  'Delhi Khadi and Village Industries Board',
+  'Delhi Legislative Assembly',
+  'Delhi Metro Rail Corporation Ltd',
+  'Delhi Minorities Commission',
+  'Delhi Police',
+  'Delhi Pollution Control Committee',
+  'Delhi Prison Department',
+  'Delhi SC ST OBC Min Handicapped Finance Development Corp Ltd',
+  'Delhi State Civil Supplies Corporation Ltd',
+  'Delhi State Consumer Disputes Redressal Commission (DSCDRC)',
+  'Delhi State Industrial and Infrastructure Development Corporation',
+  'Delhi State Legal Services Authority',
+  'Delhi Subordinate Services Selection Board',
+  'Delhi Tourism and Transport Development Corporation Ltd',
+  'Delhi Transco Ltd',
+  'Delhi Transport Corporation',
+  'Delhi Urban Shelter Improvement Board',
+  'Delhi Waqf Board',
+  'Department of Drugs Control',
+  'Department of Environment',
+  'Department of Excise Entertainment and Luxury Tax',
+  'Department of Food Safety',
+  'Department of Food Supplies and Consumer Affairs',
+  'Department of Health and Family Welfare',
+  'Department of Industries',
+  'Department of Land and Building',
+  'Department of Revenue',
+  'Department of the Welfare SC ST OBC Minorities',
+  'Department of Tourism',
+  'Department of Trade and Taxes',
+  'Department of Training and Technical Education GNCTD',
+  'Development Department',
+  'Directorate General of Home Guards',
+  'Directorate of Economics Statistics',
+  'Directorate of Employment',
+  'Directorate of Gurudwara Elections',
+  'Directorate of Information and Publicity',
+  'Directorate of National Cadet Corps',
+  'Directorate of Prosecution',
+  'Directorate of Training Union Territories Civil Services',
+  'Directorate of Vigilance',
+  'Education Department',
+  'Finance Department',
+  'Forensic Science Laboratory',
+  'Forest and Wildlife Department',
+  'General Administration Department',
+  'Higher Education Department',
+  'Home Department',
+  'Indraprastha Gas Limited',
+  'Indraprastha Power Generation Co Ltd',
+  'Information Technology Department',
+  'Irrigation and Flood Control Department',
+  'Labour Department',
+  'Law, Justice and Legislative Affairs',
+  'Municipal Corporation of Delhi',
+  'New Delhi Municipal Council',
+  'Office of State Commissioner for Persons with Disabilities',
+  'Office of the Chief Secretary GNCT of Delhi',
+  'Other Backward Classes Commission',
+  'Planning Department',
+  'Power Department',
+  'Principal Accounts Office',
+  'Public Grievance Commission',
+  'Public Works Department',
+  'Registrar Cooperative Society',
+  'Services Department',
+  'Social Welfare',
+  'State Council of Educational Research Training',
+  'State Election Commission, NCT of Delhi',
+  'Tata Power Delhi Distribution Ltd',
+  'Transport Department',
+  'Urban Development',
+  'Weights and Measures Department',
+  'Women and Child Development Department',
+]
+
+/* ── Featured Departments ────────────────────────– */
+const FEATURED_DEPARTMENTS = [
+  { name: 'Electricity', icon: Lightning, color: '#FBBF24', bgColor: 'rgba(251, 191, 36, 0.1)', description: 'Power distribution' },
+  { name: 'Water Supply', icon: Droplets, color: '#3B82F6', bgColor: 'rgba(59, 130, 246, 0.1)', description: 'Water & sewerage' },
+  { name: 'Women\'s Rights', icon: Heart, color: '#FB7185', bgColor: 'rgba(251, 113, 133, 0.1)', description: 'Women & child dev.' },
+  { name: 'Sanitation', icon: Trash2, color: '#8B5CF6', bgColor: 'rgba(139, 92, 246, 0.1)', description: 'Waste management' },
+  { name: 'Public Works', icon: Building2, color: '#06B6D4', bgColor: 'rgba(6, 182, 212, 0.1)', description: 'Infrastructure' },
+]
+
+// Color palette for departments
+const DEPT_COLORS = [
+  '#60A5FA', '#34D399', '#F59E0B', '#F87171', '#A78BFA',
+  '#10B981', '#F97316', '#0EA5E9', '#EC4899', '#8B5CF6',
+  '#14B8A6', '#D97706', '#7C3AED', '#D946EF', '#2563EB',
+  '#059669', '#DC2626', '#6366F1', '#0891B2', '#CB2935',
+  '#FBBF24', '#FB7185', '#5B21B6', '#1E40AF', '#15803D',
 ]
 
 /* ── Tracker ─────────────────────────────────────── */
@@ -165,12 +607,14 @@ export default function LandingPage() {
             {/* Pill */}
             <div className="animate-fade-up" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(232,129,58,0.12)', border: '1px solid rgba(232,129,58,0.22)', borderRadius: 999, padding: '5px 14px', marginBottom: 24 }}>
               <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--saffron)', animation: 'pulse-glow 2s infinite' }} />
-              <span style={{ fontSize: 12, color: 'var(--saffron)', fontWeight: 500, letterSpacing: '0.05em' }}>AI-Powered · Real-time · 272 Delhi Wards</span>
+              <span style={{ fontSize: 12, color: 'var(--saffron)', fontWeight: 500, letterSpacing: '0.05em' }}>AI-Powered · Real-time · 250 Delhi Wards</span>
             </div>
             {/* Headline */}
-            <h1 className="animate-fade-up d-100" style={{ fontSize: 'clamp(40px, 5vw, 64px)', color: 'white', lineHeight: 1.08, marginBottom: 24, letterSpacing: '-0.02em' }}>
-              {t('landing.heading1')}
-            </h1>
+            <div className="animate-fade-up d-100" style={{ fontSize: 'clamp(40px, 5vw, 64px)', lineHeight: 1.08, marginBottom: 24, letterSpacing: '-0.02em', fontFamily: 'var(--font-display)', fontWeight: 700 }}>
+              <div style={{ color: 'white' }}>Your Voice.</div>
+              <div style={{ color: 'var(--saffron)' }}>Your City.</div>
+              <div style={{ color: 'white' }}>Your Rights.</div>
+            </div>
             <p className="animate-fade-up d-200" style={{ fontSize: 18, color: 'rgba(255,255,255,0.5)', lineHeight: 1.75, marginBottom: 36, maxWidth: 460 }}>
               {t('landing.subheading1')}
             </p>
@@ -186,7 +630,7 @@ export default function LandingPage() {
             {/* Stats */}
             <div className="animate-fade-up d-400" style={{ display: 'flex', gap: 40, paddingTop: 24, borderTop: '1px solid rgba(255,255,255,0.08)' }}>
               <StatPill value={`${resolved.toLocaleString()}+`} label="Complaints Resolved" live light />
-              <StatPill value="272" label="Wards Covered" light />
+              <StatPill value="250" label="Wards Covered" light />
               <StatPill value="4.6d" label="Avg Resolution" light />
             </div>
           </div>
@@ -223,13 +667,15 @@ export default function LandingPage() {
       </div>
 
       {/* ── HOW IT WORKS ────────────────────────────── */}
-      <section style={{ padding: '80px 40px', maxWidth: 1280, margin: '0 auto' }}>
-        <div style={{ textAlign: 'center', marginBottom: 56 }}>
-          <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--blue-light)', marginBottom: 12 }}>How it works</div>
-          <h2 style={{ fontSize: 'clamp(28px, 4vw, 44px)', marginBottom: 16 }}>From complaint to resolution</h2>
-          <p style={{ fontSize: 16, color: 'var(--ink-light)', maxWidth: 520, margin: '0 auto' }}>LokSetu&apos;s AI processes every complaint through a 5-agent debate before it reaches the right department.</p>
+      <section style={{ padding: '80px 40px', background: 'var(--canvas)', maxWidth: 1280, margin: '0 auto' }}>
+        <div style={{ textAlign: 'center', marginBottom: 64 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--blue-light)', marginBottom: 16, display: 'inline-block', background: 'rgba(37,99,196,0.1)', padding: '6px 14px', borderRadius: 20, border: '1px solid rgba(37,99,196,0.2)' }}>The Process</div>
+          <h2 style={{ fontSize: 'clamp(32px, 5vw, 48px)', marginBottom: 16, fontWeight: 700, lineHeight: 1.2 }}>Watch Your Complaint <span style={{ color: 'var(--blue)', fontStyle: 'italic' }}>Get Resolved</span></h2>
+          <p style={{ fontSize: 16, color: 'var(--ink-light)', maxWidth: 620, margin: '0 auto', lineHeight: 1.7 }}>See the complete journey of your complaint—from filing to assignment to resolution in real-time, powered by AI.</p>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 32, alignItems: 'start' }}>
+
+        {/* Interactive Steps */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 48, alignItems: 'start' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {STEPS.map((s, i) => {
               const Icon = s.icon
@@ -304,6 +750,9 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+
+      {/* ── DEPARTMENTS SHOWCASE ────────────────────– */}
+      <DepartmentsSection />
 
       {/* ── TRACKER ─────────────────────────────────── */}
       <section style={{ background: 'var(--ink)', padding: '80px 40px' }}>

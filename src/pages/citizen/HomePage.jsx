@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { FileText, Clock, CheckCircle, AlertTriangle, ChevronRight, ArrowRight } from 'lucide-react'
+import { FileText, Clock, CheckCircle, AlertTriangle, ChevronRight, ArrowRight, MessageSquare } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Card, Badge, SentimentDot } from '../../components/ui'
 import { RTI_TOPICS } from '../../data/mockData'
@@ -30,10 +30,11 @@ export default function CitizenHome() {
   const { user } = useApp()
   const { t } = useTranslation()
   const [complaints, setComplaints] = useState([])
+  const [adminUpdates, setAdminUpdates] = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const fetchComplaints = async () => {
+    const fetchComplaintsAndUpdates = async () => {
       try {
         setLoading(true)
         const response = await complaintsAPI.getAll()
@@ -57,6 +58,28 @@ export default function CitizenHome() {
         }))
         
         setComplaints(mapped)
+        
+        // Load updates for each complaint
+        const allUpdates = []
+        for (const complaint of mapped) {
+          try {
+            const updatesResponse = await complaintsAPI.getUpdates(complaint.id)
+            const updates = (updatesResponse.data || []).filter(u => u.type === 'COMMENT' || u.message)
+            if (updates.length > 0) {
+              allUpdates.push(...updates.map(u => ({
+                complaintId: complaint.id,
+                complaintTitle: complaint.title,
+                message: u.message,
+                createdAt: u.createdAt,
+              })))
+            }
+          } catch (err) {
+            console.log('Could not load updates for complaint:', complaint.id)
+          }
+        }
+        
+        // Sort by most recent first
+        setAdminUpdates(allUpdates.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 5))
       } catch (err) {
         console.error('Error fetching complaints:', err)
         setComplaints([])
@@ -66,11 +89,11 @@ export default function CitizenHome() {
     }
 
     if (user) {
-      fetchComplaints()
+      fetchComplaintsAndUpdates()
     } else {
       setLoading(false)
     }
-  }, [user])
+  }, [user, t])
 
   const active = complaints.filter(c => c.status !== 'resolved')
   const resolved = complaints.filter(c => c.status === 'resolved')
@@ -159,6 +182,35 @@ export default function CitizenHome() {
         </div>
       </Card>
 
+      {/* Admin Updates Section */}
+      {adminUpdates.length > 0 && (
+        <Card style={{ background: 'linear-gradient(135deg, #F0FDF4 0%, #FFFAED 100%)', border: '1px solid rgba(34, 197, 94, 0.2)', borderLeft: '4px solid var(--green)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+            <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--green-pale)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <MessageSquare size={16} color="var(--green)" />
+            </div>
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink)' }}>Admin Updates</div>
+              <div style={{ fontSize: 11, color: 'var(--ink-light)' }}>Latest messages from your department</div>
+            </div>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {adminUpdates.map((update, i) => (
+              <div key={i} style={{ background: 'rgba(255,255,255,0.6)', borderRadius: 'var(--r-md)', padding: '12px 14px', border: '1px solid rgba(34, 197, 94, 0.1)', borderLeft: '3px solid var(--green)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: 6 }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--ink)' }}>{update.complaintTitle}</div>
+                  <div style={{ fontSize: 10, color: 'var(--ink-light)', flexShrink: 0 }}>{new Date(update.createdAt).toLocaleDateString()}</div>
+                </div>
+                <div style={{ fontSize: 12, color: 'var(--ink-muted)', lineHeight: 1.5 }}>{update.message}</div>
+              </div>
+            ))}
+          </div>
+          <button onClick={() => navigate('/citizen/complaints')} style={{ marginTop: 12, fontSize: 12, color: 'var(--green)', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
+            View all updates <ChevronRight size={14} />
+          </button>
+        </Card>
+      )}
+
       {/* Quick RTI tip */}
       <Card style={{ background: 'linear-gradient(135deg, #0D1B2A 0%, #1A2F45 100%)', border: 'none' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -169,6 +221,19 @@ export default function CitizenHome() {
           </div>
           <button onClick={() => navigate('/citizen/rti')} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 18px', background: 'var(--saffron)', color: 'white', border: 'none', borderRadius: 'var(--r-md)', cursor: 'pointer', fontSize: 13, fontFamily: 'var(--font-body)', fontWeight: 600, flexShrink: 0 }}>
             {t('home.knowYourRights')} <ArrowRight size={14} />
+          </button>
+        </div>
+      </Card>
+
+      {/* RTI AI Assistant Question */}
+      <Card style={{ background: 'var(--blue-pale)', border: '1px solid rgba(26,75,140,0.15)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 20 }}>
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--blue)', marginBottom: 4 }}>Have an RTI question?</div>
+            <div style={{ fontSize: 12, color: 'var(--ink-muted)', lineHeight: 1.6 }}>Ask our AI assistant — it knows Delhi's civic laws, SLAs, and can help you draft an RTI application in minutes.</div>
+          </div>
+          <button onClick={() => navigate('/citizen/rti')} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 18px', background: 'var(--blue)', color: 'white', border: 'none', borderRadius: 'var(--r-md)', cursor: 'pointer', fontSize: 13, fontFamily: 'var(--font-body)', fontWeight: 600, flexShrink: 0 }}>
+            Ask AI <ChevronRight size={14} />
           </button>
         </div>
       </Card>

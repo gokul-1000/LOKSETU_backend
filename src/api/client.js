@@ -92,6 +92,9 @@ export const complaintsAPI = {
   addUpdate: (id, message) =>
     api.post(`/complaints/${id}/updates`, { message }),
   
+  getUpdates: (id) =>
+    api.get(`/complaints/${id}/updates`),
+  
   assign: (id, officerId) =>
     api.post(`/complaints/${id}/assign`, { officerId }),
 }

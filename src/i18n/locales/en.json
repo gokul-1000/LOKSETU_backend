@@ -163,8 +163,8 @@
   },
   "landing": {
     "selectLanguage": "Select Language",
-    "heading1": "Every Pothole. Every Complaint. Heard & Resolved.",
-    "subheading1": "AI debates the best department. Tracks every update. Escalates if officers miss SLA.",
+    "heading1": "Your Voice. Your City. Your Rights.",
+    "subheading1": "LokSetu connects Delhi citizens directly to the municipal system. File complaints, track resolution, and watch AI ensure accountability — in your language.",
     "iAmCitizen": "I'm a Citizen",
     "iAmOfficer": "I'm a Ward Officer",
     "iAmLeader": "I'm a Leader / DC",
@@ -202,7 +202,7 @@
     "deptFeature4": "Cross-ward patterns",
     "leaderRole": "Leader / DC",
     "leaderTagline": "City-level intelligence",
-    "leaderFeature1": "272-ward health heatmap",
+    "leaderFeature1": "250-ward health heatmap",
     "leaderFeature2": "AI pattern detection",
     "leaderFeature3": "Department performance",
     "leaderFeature4": "Accountability reports"

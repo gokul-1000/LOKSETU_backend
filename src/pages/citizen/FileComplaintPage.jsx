@@ -1,11 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Bot, User, Send, Camera, MapPin, Mic, CheckCircle, ChevronRight, AlertCircle, Edit3, Upload, AlertTriangle, X } from 'lucide-react'
+import { Bot, User, Send, Camera, MapPin, Mic, CheckCircle, ChevronRight, AlertCircle, Edit3, Upload, AlertTriangle, X, Map, Filter } from 'lucide-react'
 import { Card, Button, Badge } from '../../components/ui'
 import { complaintsAPI, llmAPI, imagesAPI } from '../../api/client'
 import { useApp } from '../../context/AppContext'
+import { DEPARTMENTS, CATEGORIES, DELHI_WARDS, searchWardsByLocation, getAllZones, getDepartmentsByZone } from '../../data/wardsData'
 
 const INITIAL_MSG = { role: 'ai', text: 'Namaste! I\'m your AI complaint assistant. Tell me what civic issue you\'re facing — describe it in your own words, in Hindi or English. I\'ll help you draft the perfect complaint.' }
+const LOCATION_MSG = { role: 'ai', text: '📍 Perfect! Now let me help you find the exact ward and zone. Tell me your specific location: street name, landmark, market area, or sector number. For example: "MG Road near Karol Bagh Metro" or "Dwarka Sector 10" or "Chandni Chowk market area"' }
 
 export default function FileComplaintPage() {
   const navigate = useNavigate()
@@ -16,14 +18,18 @@ export default function FileComplaintPage() {
   const [isTyping, setIsTyping] = useState(false)
   const [language, setLanguage] = useState('English')
   const [step, setStep] = useState('chat')
-  const [draft, setDraft] = useState({ title: '', description: '', category: '', location: '', date: '' })
+  const [aiStep, setAiStep] = useState('complaint') // 'complaint' or 'location'
+  const [draft, setDraft] = useState({ title: '', description: '', category: '', location: '', date: '', ward: '', zone: '', department: '' })
   const [selectedDept, setSelectedDept] = useState(0)
   const [deptSuggestions, setDeptSuggestions] = useState([])
-  const [manualForm, setManualForm] = useState({ title: '', description: '', category: 'Roads', location: '' })
+  const [manualForm, setManualForm] = useState({ title: '', description: '', category: 'Roads & Pavements', location: '', ward: '', zone: '', department: '' })
+  const [locationInput, setLocationInput] = useState('')
+  const [locationSuggestions, setLocationSuggestions] = useState([])
   const [submitting, setSubmitting] = useState(false)
   const [uploadedImages, setUploadedImages] = useState([])
   const [uploading, setUploading] = useState(false)
   const [imageVerification, setImageVerification] = useState({})
+  const [selectedZone, setSelectedZone] = useState('')
   const fileInputRef = useRef(null)
   const messagesRef = useRef(null)
 
@@ -183,7 +189,27 @@ export default function FileComplaintPage() {
     })
   }
 
-  const CATEGORIES = ['Roads', 'Water & Sanitation', 'Electricity', 'Sanitation', 'Infrastructure', 'Encroachment', 'Environment', 'Parks', 'Noise Pollution', 'Other']
+  const handleLocationSearch = (input) => {
+    setLocationInput(input)
+    if (input.trim().length < 2) {
+      setLocationSuggestions([])
+      return
+    }
+    
+    const results = searchWardsByLocation(input)
+    setLocationSuggestions(results.slice(0, 8)) // Limit to 8 suggestions
+  }
+
+  const selectWardLocation = (ward) => {
+    setManualForm(f => ({
+      ...f,
+      location: ward.landmarks[0] || ward.name,
+      ward: `Ward ${ward.wardNo} - ${ward.name}`,
+      zone: ward.zoneName
+    }))
+    setLocationInput('')
+    setLocationSuggestions([])
+  }
 
   if (!user) {
     return <div style={{ padding: 20, textAlign: 'center' }}>Please log in to file a complaint</div>
@@ -282,6 +308,7 @@ export default function FileComplaintPage() {
                   <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 12 }}>How the AI helps</div>
                   {[
                     { icon: '🔍', text: 'Extracts title, category, location & date from your description' },
+                    { icon: '📍', text: 'Finds exact ward and zone using AI location matching' },
                     { icon: '🏢', text: 'Maps to the right Delhi department from 90+ options' },
                     { icon: '⚡', text: 'Scores urgency 1–10 based on safety, SLA history & sentiment' },
                     { icon: '🌐', text: 'Works in Hindi, Punjabi, English — you choose' },
@@ -316,6 +343,53 @@ export default function FileComplaintPage() {
                       </div>
                     ))}
                   </div>
+                </Card>
+
+                {/* AI-Powered Location Suggestions */}
+                <Card style={{ background: 'linear-gradient(135deg, var(--blue-pale) 0%, rgba(96,165,250,0.05) 100%)', border: '1px solid var(--blue)' }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--blue)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Map size={14} /> AI Location Matcher
+                  </div>
+                  
+                  {/* Search for wards matching complaint location */}
+                  <div style={{ marginBottom: 12 }}>
+                    <div style={{ fontSize: 12, color: 'var(--ink-light)', marginBottom: 6 }}>Found wards matching "{draft.location}":</div>
+                    {searchWardsByLocation(draft.location || draft.title).length > 0 ? (
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, maxHeight: 220, overflowY: 'auto' }}>
+                        {searchWardsByLocation(draft.location || draft.title).slice(0, 6).map((ward, idx) => (
+                          <div
+                            key={idx}
+                            onClick={() => setDraft(d => ({ ...d, ward: `Ward ${ward.wardNo} - ${ward.name}`, zone: ward.zoneName }))}
+                            style={{
+                              padding: '10px 12px',
+                              background: 'white',
+                              border: draft.ward === `Ward ${ward.wardNo} - ${ward.name}` ? '2px solid var(--blue)' : 'var(--border)',
+                              borderRadius: 'var(--r-md)',
+                              cursor: 'pointer',
+                              transition: 'all var(--t-fast)',
+                              fontSize: 11,
+                            }}
+                            onMouseEnter={e => e.currentTarget.style.background = draft.ward === `Ward ${ward.wardNo} - ${ward.name}` ? '#e3f2fd' : '#f5f5f5'}
+                            onMouseLeave={e => e.currentTarget.style.background = 'white'}
+                          >
+                            <div style={{ fontWeight: 600, color: 'var(--ink)', marginBottom: 3 }}>Ward {ward.wardNo}</div>
+                            <div style={{ fontSize: 10, color: 'var(--ink-light)', marginBottom: 2 }}>{ward.name}</div>
+                            <div style={{ fontSize: 9, color: 'var(--saffron)', fontWeight: 500 }}>📌 {ward.zoneName}</div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div style={{ padding: 10, background: 'white', borderRadius: 'var(--r-md)', fontSize: 12, color: 'var(--ink-light)' }}>
+                        💡 Tip: Add more location details in the description to help find the right ward
+                      </div>
+                    )}
+                  </div>
+
+                  {draft.ward && (
+                    <div style={{ padding: '8px 10px', background: 'white', borderRadius: 'var(--r-md)', border: '1px solid var(--green)', fontSize: 11, color: 'var(--green)', fontWeight: 500 }}>
+                      ✓ Selected: {draft.ward} • Zone: {draft.zone}
+                    </div>
+                  )}
                 </Card>
 
                 {/* Image Upload Section */}
@@ -397,40 +471,177 @@ export default function FileComplaintPage() {
       )}
 
       {tab === 'manual' && (
-        <Card style={{ maxWidth: 640 }}>
-          <div style={{ fontFamily: 'var(--font-display)', fontSize: 18, marginBottom: 20 }}>Manual Complaint Form</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            {[
-              { label: 'Complaint Title', key: 'title', type: 'input', placeholder: 'Brief title describing the issue' },
-              { label: 'Location (Street / Landmark / Ward)', key: 'location', type: 'input', placeholder: 'e.g. MG Road near Karol Bagh Metro, Ward 12' },
-            ].map(({ label, key, placeholder }) => (
-              <div key={key}>
-                <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--ink-light)', marginBottom: 6 }}>{label}</div>
-                <input value={manualForm[key]} onChange={e => setManualForm(f => ({ ...f, [key]: e.target.value }))} placeholder={placeholder} style={{ width: '100%', padding: '9px 14px', border: 'var(--border)', borderRadius: 'var(--r-md)', fontSize: 13, fontFamily: 'var(--font-body)', outline: 'none', color: 'var(--ink)', background: 'var(--canvas)' }}
-                  onFocus={e => e.target.style.borderColor = 'var(--blue-light)'}
-                  onBlur={e => e.target.style.borderColor = 'rgba(13,27,42,0.08)'} />
+        <Card style={{ maxWidth: 800 }}>
+          <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, marginBottom: 24, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Filter size={20} /> Enhanced Complaint Form
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+            
+            {/* Location Section with AI-powered suggestions */}
+            <div style={{ position: 'relative' }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--blue)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 8 }}>📍 Location Info</div>
+              <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+                <input 
+                  value={locationInput} 
+                  onChange={e => handleLocationSearch(e.target.value)} 
+                  placeholder="Search by street, landmark, sector, or area name..." 
+                  style={{ flex: 1, padding: '9px 14px', border: '2px solid var(--blue-light)', borderRadius: 'var(--r-md)', fontSize: 13, fontFamily: 'var(--font-body)', outline: 'none', color: 'var(--ink)', background: 'var(--canvas)' }} 
+                />
+                <MapPin size={18} style={{ color: 'var(--blue)', marginTop: 8 }} />
               </div>
-            ))}
+              
+              {/* Location suggestions dropdown */}
+              {locationSuggestions.length > 0 && (
+                <div style={{ 
+                  position: 'absolute', 
+                  top: '100%', 
+                  left: 0, 
+                  right: 0, 
+                  background: 'white', 
+                  border: 'var(--border)', 
+                  borderRadius: 'var(--r-md)', 
+                  maxHeight: 280, 
+                  overflowY: 'auto', 
+                  zIndex: 10, 
+                  marginTop: 4,
+                  boxShadow: 'var(--shadow-lg)'
+                }}>
+                  {locationSuggestions.map((ward, idx) => (
+                    <div 
+                      key={idx} 
+                      onClick={() => selectWardLocation(ward)}
+                      style={{ 
+                        padding: '12px 14px', 
+                        borderBottom: idx < locationSuggestions.length - 1 ? 'var(--border)' : 'none', 
+                        cursor: 'pointer', 
+                        background: 'white',
+                        transition: 'background var(--t-fast)'
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.background = 'var(--blue-pale)'}
+                      onMouseLeave={e => e.currentTarget.style.background = 'white'}
+                    >
+                      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)' }}>Ward {ward.wardNo}: {ward.name}</div>
+                      <div style={{ fontSize: 11, color: 'var(--ink-light)', marginTop: 3 }}>
+                        📌 {ward.landmarks[0]} • {ward.zoneName}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              
+              {/* Selected location display */}
+              {manualForm.ward && (
+                <div style={{ marginTop: 8, padding: '10px 12px', background: 'var(--blue-pale)', borderRadius: 'var(--r-md)', border: '1px solid var(--blue)' }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--blue)' }}>✓ {manualForm.ward}</div>
+                  <div style={{ fontSize: 11, color: 'var(--ink-light)', marginTop: 4 }}>Location: {manualForm.location}</div>
+                </div>
+              )}
+            </div>
 
-            <div>
-              <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--ink-light)', marginBottom: 6 }}>Category</div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                {CATEGORIES.map(cat => (
-                  <button key={cat} onClick={() => setManualForm(f => ({ ...f, category: cat }))} style={{ padding: '5px 12px', borderRadius: 'var(--r-full)', fontSize: 12, background: manualForm.category === cat ? 'var(--blue)' : 'var(--canvas)', color: manualForm.category === cat ? 'white' : 'var(--ink-light)', border: 'var(--border)', cursor: 'pointer', fontFamily: 'var(--font-body)', transition: 'all var(--t-fast)' }}>{cat}</button>
-                ))}
+            {/* Horizontal Layout: Zone, Ward Selection + Complaint Title */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              {/* Zone Selector */}
+              <div>
+                <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--ink-light)', marginBottom: 6 }}>Zone</div>
+                <select 
+                  value={selectedZone} 
+                  onChange={e => setSelectedZone(e.target.value)}
+                  style={{ width: '100%', padding: '9px 14px', border: 'var(--border)', borderRadius: 'var(--r-md)', fontSize: 13, fontFamily: 'var(--font-body)', outline: 'none', color: 'var(--ink)', background: 'var(--canvas)', cursor: 'pointer' }}>
+                  <option value="">Select Zone...</option>
+                  {getAllZones().map(z => (
+                    <option key={z.id} value={z.name}>{z.name} ({z.totalWards} wards)</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Category Selector */}
+              <div>
+                <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--ink-light)', marginBottom: 6 }}>Issue Category</div>
+                <select 
+                  value={manualForm.category} 
+                  onChange={e => setManualForm(f => ({ ...f, category: e.target.value }))}
+                  style={{ width: '100%', padding: '9px 14px', border: 'var(--border)', borderRadius: 'var(--r-md)', fontSize: 13, fontFamily: 'var(--font-body)', outline: 'none', color: 'var(--ink)', background: 'var(--canvas)', cursor: 'pointer' }}>
+                  {CATEGORIES.map(cat => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </select>
               </div>
             </div>
 
+            {/* Complaint Title */}
             <div>
-              <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--ink-light)', marginBottom: 6 }}>Description</div>
-              <textarea value={manualForm.description} onChange={e => setManualForm(f => ({ ...f, description: e.target.value }))} placeholder="Describe the issue in detail — when it started, how severe, who is affected…" rows={4} style={{ width: '100%', padding: '9px 14px', border: 'var(--border)', borderRadius: 'var(--r-md)', fontSize: 13, fontFamily: 'var(--font-body)', outline: 'none', color: 'var(--ink)', background: 'var(--canvas)', resize: 'vertical' }}
+              <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--ink-light)', marginBottom: 6 }}>Complaint Title</div>
+              <input 
+                value={manualForm.title} 
+                onChange={e => setManualForm(f => ({ ...f, title: e.target.value }))} 
+                placeholder="Brief title describing the issue" 
+                style={{ width: '100%', padding: '9px 14px', border: 'var(--border)', borderRadius: 'var(--r-md)', fontSize: 13, fontFamily: 'var(--font-body)', outline: 'none', color: 'var(--ink)', background: 'var(--canvas)' }}
                 onFocus={e => e.target.style.borderColor = 'var(--blue-light)'}
                 onBlur={e => e.target.style.borderColor = 'rgba(13,27,42,0.08)'} />
             </div>
 
-            <button onClick={handleManualSubmit} disabled={submitting} style={{ padding: '11px', background: submitting ? '#ccc' : 'var(--blue)', color: 'white', border: 'none', borderRadius: 'var(--r-md)', cursor: submitting ? 'not-allowed' : 'pointer', fontSize: 14, fontFamily: 'var(--font-body)', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-              {submitting ? 'Submitting...' : (<><Send size={15} /> Submit Complaint</>)}
-            </button>
+            {/* Department Selector (filtered by zone) */}
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--ink-light)', marginBottom: 6 }}>Department (Auto-matched based on category)</div>
+              {selectedZone ? (
+                <select 
+                  value={manualForm.department} 
+                  onChange={e => setManualForm(f => ({ ...f, department: e.target.value }))}
+                  style={{ width: '100%', padding: '9px 14px', border: 'var(--border)', borderRadius: 'var(--r-md)', fontSize: 13, fontFamily: 'var(--font-body)', outline: 'none', color: 'var(--ink)', background: 'var(--canvas)', cursor: 'pointer' }}>
+                  <option value="">Select Department...</option>
+                  {DEPARTMENTS.map(dept => (
+                    <option key={dept.id} value={dept.name}>{dept.emoji} {dept.name}</option>
+                  ))}
+                </select>
+              ) : (
+                <div style={{ padding: '9px 14px', border: 'var(--border)', borderRadius: 'var(--r-md)', fontSize: 13, color: 'var(--ink-light)', background: 'var(--canvas)' }}>
+                  Select a zone first to see available departments
+                </div>
+              )}
+            </div>
+
+            {/* Description */}
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--ink-light)', marginBottom: 6 }}>Detailed Description</div>
+              <textarea 
+                value={manualForm.description} 
+                onChange={e => setManualForm(f => ({ ...f, description: e.target.value }))} 
+                placeholder="Describe the issue in detail — when it started, how severe, who is affected, what action is needed..." 
+                rows={5} 
+                style={{ width: '100%', padding: '9px 14px', border: 'var(--border)', borderRadius: 'var(--r-md)', fontSize: 13, fontFamily: 'var(--font-body)', outline: 'none', color: 'var(--ink)', background: 'var(--canvas)', resize: 'vertical' }}
+                onFocus={e => e.target.style.borderColor = 'var(--blue-light)'}
+                onBlur={e => e.target.style.borderColor = 'rgba(13,27,42,0.08)'} />
+            </div>
+
+            {/* Submit Button Card */}
+            <Card style={{ background: 'linear-gradient(135deg, var(--blue-pale) 0%, rgba(96,165,250,0.05) 100%)', border: '1px solid var(--blue)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                <CheckCircle size={16} color="var(--blue)" />
+                <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--blue)' }}>Ready to submit? </span>
+              </div>
+              <button 
+                onClick={handleManualSubmit} 
+                disabled={submitting || !manualForm.title.trim() || !manualForm.location.trim() || !manualForm.description.trim()} 
+                style={{ 
+                  padding: '12px', 
+                  width: '100%',
+                  background: submitting || !manualForm.title.trim() || !manualForm.location.trim() || !manualForm.description.trim() ? '#ccc' : 'var(--blue)', 
+                  color: 'white', 
+                  border: 'none', 
+                  borderRadius: 'var(--r-md)', 
+                  cursor: submitting || !manualForm.title.trim() || !manualForm.location.trim() || !manualForm.description.trim() ? 'not-allowed' : 'pointer', 
+                  fontSize: 14, 
+                  fontFamily: 'var(--font-body)', 
+                  fontWeight: 600, 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center', 
+                  gap: 8,
+                  transition: 'all var(--t-fast)'
+                }}>
+                {submitting ? 'Submitting...' : (<><Send size={15} /> Submit Complaint</>)}
+              </button>
+            </Card>
           </div>
         </Card>
       )}

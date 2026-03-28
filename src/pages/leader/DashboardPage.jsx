@@ -96,7 +96,7 @@ export default function LeaderDashboard() {
         <KPICard label="Resolved This Month"  value={KPI_STATS.resolvedThisMonth.toLocaleString()} sub="Mar 2024"     icon={CheckCircle}   color="var(--green)"   trend="8%"   trendPositive={true}  />
         <KPICard label="Avg Resolution"       value={`${KPI_STATS.avgResolutionDays}d`}           sub="Days/complaint" icon={Clock}         color="var(--amber)"   trend="0.3d" trendPositive={true}  />
         <KPICard label="Pending Escalations"  value={KPI_STATS.pendingEscalations}               sub="Require attention" icon={AlertTriangle} color="var(--red)"     trend="4"   trendPositive={false} />
-        <KPICard label="Ward Health Avg"      value={`${KPI_STATS.wardHealthAvg}%`}               sub="Across 272 wards" icon={TrendingUp}    color="var(--blue)"    trend="3pts" trendPositive={true} />
+        <KPICard label="Ward Health Avg"      value={`${KPI_STATS.wardHealthAvg}%`}               sub="Across 250 wards" icon={TrendingUp}    color="var(--blue)"    trend="3pts" trendPositive={true} />
         <KPICard label="AI Classified"        value={`${KPI_STATS.aiClassified}%`}                sub="Auto-routed"    icon={Brain}         color="var(--saffron)"               />
       </div>
 

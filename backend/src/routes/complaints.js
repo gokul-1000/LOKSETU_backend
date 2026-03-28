@@ -153,6 +153,27 @@ router.post('/:id/updates', authMiddleware, [
   }
 })
 
+// Get complaint updates/messages
+router.get('/:id/updates', async (req, res) => {
+  try {
+    const updates = await prisma.update.findMany({
+      where: { complaintId: req.params.id },
+      orderBy: { createdAt: 'asc' },
+      select: {
+        id: true,
+        type: true,
+        message: true,
+        createdBy: true,
+        createdAt: true,
+      }
+    })
+    res.json(updates)
+  } catch (error) {
+    console.error('Error fetching updates:', error)
+    res.status(500).json({ error: 'Failed to fetch updates' })
+  }
+})
+
 // Assign complaint
 router.post('/:id/assign', authMiddleware, [
   body('officerId').notEmpty(),
